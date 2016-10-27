@@ -7,31 +7,29 @@
 
     AuthController.$inject = ['Auth', '$state', 'Users'];
     function AuthController(Auth, $state, Users) {
-        var $ctrl = this;
-        $ctrl.user = {
+        var authCtrl = this;
+        authCtrl.user = {
             email: '',
             password: ''
         };
-        $ctrl.login = login;
-        $ctrl.register = register;
+        authCtrl.login = login;
+        authCtrl.register = register;
 
         function login() {
-            Auth.$authWithPassword($ctrl.user)
+            Auth.$authWithPassword(authCtrl.user)
                 .then(function(auth) {
-                    Users.getDisplayName(auth.uid);
-                    Users.getProfile(auth.uid);
-                    $state.go('home');
+                    $state.go('profile');
                 }, function(err) {
-                    $ctrl.error = err;
+                    authCtrl.error = err;
                 });
          }
 
          function register() {
-           Auth.$createUser($ctrl.user)
+           Auth.$createUser(authCtrl.user)
              .then(function (user) {
-               $ctrl.login();
+               authCtrl.login();
              }, function (error) {
-               $ctrl.error = error;
+               authCtrl.error = error;
              });
          }
 

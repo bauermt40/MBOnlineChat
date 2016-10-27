@@ -19,31 +19,47 @@ angular
       .state('home', {
         url: '/',
         templateUrl: 'home/home.html',
-        controller: 'HomeController as $ctrl'
+        resolve: {
+          requireNoAuth: function($state, Auth){
+            return Auth.$requireAuth().then(function(auth){
+              $state.go('channels');
+            }, function(error){
+              return;
+            });
+          }
+        }
       })
       .state('login', {
         url: '/login',
-        controller: 'AuthController as $ctrl',
-        templateUrl: 'auth/login.html'
-        // resolve: {
-        //   requireNoAuth: function($state, Auth) {
-        //     return Auth.$requireAuth()
-        //       .then(function(auth) {
-        //         $state.go('home');
-        //       }, function(err) {
-        //         return;
-        //       });
-        //   }
-        // }
+        controller: 'AuthController as authCtrl',
+        templateUrl: 'auth/login.html',
+        resolve: {
+          requireNoAuth: function($state, Auth){
+            return Auth.$requireAuth().then(function(auth){
+              $state.go('home');
+            }, function(error){
+              return;
+            });
+          }
+        }
       })
       .state('register', {
         url: '/register',
-        controller: 'AuthController as $ctrl',
-        templateUrl: 'auth/register.html'
+        controller: 'AuthController as authCtrl',
+        templateUrl: 'auth/register.html',
+        resolve: {
+          requireNoAuth: function($state, Auth){
+            return Auth.$requireAuth().then(function(auth) {
+              $state.go('home');
+            }, function(error) {
+              return;
+            });
+          }
+        }
       })
       .state('profile', {
         url: '/profile',
-        controller: 'ProfileController as $ctrl',
+        controller: 'ProfileController as profileCtrl',
         templateUrl: 'users/profile.html',
         resolve: {
           auth: function($state, Users, Auth){
@@ -57,7 +73,48 @@ angular
             });
           }
         }
-      });
+      })
+      .state('channels', {
+        url: '/channels',
+        controller: 'ChannelsController as channelsCtrl',
+        templateUrl: 'channels/index.html',
+        resolve: {
+          channels: function (Channels){
+            return Channels.$loaded();
+          },
+          profile: function ($state, Auth, Users){
+            return Auth.$requireAuth().then(function(auth){
+              return Users.getProfile(auth.uid).$loaded().then(function (profile){
+                if(profile.displayName){
+                  return profile;
+                } else {
+                  $state.go('profile');
+                }
+              });
+            }, function(error){
+              $state.go('home');
+            });
+          }
+        }
+    })
+    .state('channels.create', {
+      url: '/create',
+      templateUrl: 'channels/create.html',
+      controller: 'ChannelsController as channelsCtrl'
+    })
+    .state('channels.messages', {
+      url: '/{channelId}/messages',
+      templateUrl: 'channels/messages.html',
+      controller: 'MessagesController as messagesCtrl',
+      resolve: {
+        messages: function($stateParams, Messages){
+          return Messages.forChannel($stateParams.channelId).$loaded();
+        },
+        channelName: function($stateParams, channels){
+          return '#'+channels.$getRecord($stateParams.channelId).name;
+        }
+      }
+    });
 
     $urlRouterProvider.otherwise('/');
   })
